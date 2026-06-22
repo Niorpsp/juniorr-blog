@@ -1,10 +1,12 @@
+import NavBar from "./components/NavBar";
+import HeroSection from "./components/HeroSection";
+
 function App() {
   return (
-    <section className="p-8">
-      <h1 className="text-4xl font-bold text-blue-600">
-        My First React App on Vite
-      </h1>
-    </section>
+    <div className="min-h-screen bg-gray-50">
+      <NavBar />
+      <HeroSection />
+    </div>
   );
 }
 
