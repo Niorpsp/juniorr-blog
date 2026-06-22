@@ -1,11 +1,17 @@
-import NavBar from "./components/NavBar";
+﻿import NavBar from "./components/NavBar";
 import HeroSection from "./components/HeroSection";
+import ArticlesSection from "./components/ArticlesSection";
+import Footer from "./components/Footer";
 
 function App() {
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="flex flex-col min-h-screen bg-slate-50">
       <NavBar />
-      <HeroSection />
+      <div className="flex-grow">
+        <HeroSection />
+        <ArticlesSection />
+      </div>
+      <Footer />
     </div>
   );
 }
