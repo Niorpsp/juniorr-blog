@@ -44,7 +44,7 @@ export default function ArticlesSection() {
       >
 
         {/* Search */}
-        <div className="relative w-full md:w-82.5">
+        <div className="relative w-full md:w-[330px]">
           <Search
             className="
               pointer-events-none
