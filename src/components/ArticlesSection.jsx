@@ -8,6 +8,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import BlogCard from "./BlogCard";
+import blogPosts from "@/data/blogPosts";
 
 export default function ArticlesSection() {
   const [activeCategory, setActiveCategory] = useState("highlight");
@@ -18,6 +20,11 @@ export default function ArticlesSection() {
     { value: "inspiration", label: "Inspiration" },
     { value: "general", label: "General" },
   ];
+
+  // Filter blog posts based on active category
+  const filteredPosts = activeCategory === "highlight" 
+    ? blogPosts 
+    : blogPosts.filter(post => post.category.toLowerCase() === activeCategory);
 
   return (
     <section className="mx-auto mb-10 max-w-7xl px-4 md:px-6 lg:px-8">
@@ -42,42 +49,6 @@ export default function ArticlesSection() {
           md:justify-between
         "
       >
-
-        {/* Search */}
-        <div className="relative w-full md:w-[330px]">
-          <Search
-            className="
-              pointer-events-none
-              absolute
-              right-4
-              top-1/2
-              h-5
-              w-5
-              -translate-y-1/2
-              text-slate-400
-            "
-          />
-
-          <Input
-            type="text"
-            placeholder="Search"
-            className="
-              w-full
-              rounded-full
-              border
-              border-slate-200
-              bg-white
-              px-5
-              py-3
-              text-sm
-              text-slate-900
-              placeholder:text-slate-400
-              focus:border-slate-300
-              focus:ring-0
-            "
-          />
-        </div>
-
 
         {/* Desktop Category */}
         <div className="hidden md:flex flex-wrap gap-3">
@@ -150,6 +121,56 @@ export default function ArticlesSection() {
           </Select>
         </div>
 
+        {/* Search */}
+        <div className="relative w-full md:w-[330px]">
+          <Search
+            className="
+              pointer-events-none
+              absolute
+              right-4
+              top-1/2
+              h-5
+              w-5
+              -translate-y-1/2
+              text-slate-400
+            "
+          />
+
+          <Input
+            type="text"
+            placeholder="Search"
+            className="
+              w-full
+              rounded-full
+              border
+              border-slate-200
+              bg-white
+              px-5
+              py-3
+              text-sm
+              text-slate-900
+              placeholder:text-slate-400
+              focus:border-slate-300
+              focus:ring-0
+            "
+          />
+        </div>
+
+      </div>
+
+      {/* Blog Cards Grid */}
+      <div className="mt-8 grid grid-cols-1 md:grid-cols-2 gap-8">
+        {filteredPosts.map((post) => (
+          <BlogCard
+            key={post.id}
+            image={post.image}
+            category={post.category}
+            title={post.title}
+            description={post.description}
+            author={post.author}
+            date={post.date}
+          />
+        ))}
       </div>
 
     </section>
