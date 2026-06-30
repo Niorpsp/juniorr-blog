@@ -1,7 +1,7 @@
 function BlogCard({ image, category, title, description, author, date }) {
   return (
     <div className="flex flex-col gap-4">
-      <a href="#" className="relative h-[212px] sm:h-[360px]">
+      <a href="#" className="relative h-53 sm:h-90">
         <img
           className="w-full h-full object-cover rounded-md"
           src={image}
