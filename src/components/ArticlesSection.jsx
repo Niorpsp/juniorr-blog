@@ -10,6 +10,7 @@ import {
 } from "@/components/ui/select";
 
 import BlogCard from "./BlogCard";
+import blogPosts from "@/data/blogPosts";
 import postsApi from "@/services/postsApi";
 
 export default function ArticlesSection() {
@@ -17,7 +18,7 @@ export default function ArticlesSection() {
   // State
   // -----------------------------
   const [activeCategory, setActiveCategory] = useState("highlight");
-  const [posts, setPosts] = useState([]);
+  const [posts, setPosts] = useState(blogPosts);
   const [isLoading, setIsLoading] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [limit] = useState(6);
@@ -32,12 +33,7 @@ export default function ArticlesSection() {
 
   // ใช้สร้างปุ่ม Desktop
   // และ Dropdown บน Mobile
-  const categories = [
-    { value: "highlight", label: "Highlight" },
-    { value: "cat", label: "Cat" },
-    { value: "inspiration", label: "Inspiration" },
-    { value: "general", label: "General" },
-  ];
+  const categories = ["Highlight", "Cat", "Inspiration", "General"];
 
   // -----------------------------
   // ดึงข้อมูลบทความจาก API
@@ -171,15 +167,15 @@ export default function ArticlesSection() {
         {/* Desktop Category */}
         <div className="hidden md:flex flex-wrap gap-3">
           {categories.map((category) => {
-            // ตรวจสอบว่าปุ่มนี้ถูกเลือกอยู่หรือไม่
-            const isActive = activeCategory === category.value;
+            const value = category.toLowerCase();
+            const isActive = activeCategory === value;
 
             return (
               <button
-                key={category.value}
+                key={category}
                 type="button"
                 disabled={isActive}
-                onClick={() => handleCategoryChange(category.value)}
+                onClick={() => handleCategoryChange(value)}
                 className={`
                   rounded-full
                   px-5
@@ -195,7 +191,7 @@ export default function ArticlesSection() {
                   }
                 `}
               >
-                {category.label}
+                {category}
               </button>
             );
           })}
@@ -224,11 +220,14 @@ export default function ArticlesSection() {
             </SelectTrigger>
 
             <SelectContent>
-              {categories.map((category) => (
-                <SelectItem key={category.value} value={category.value}>
-                  {category.label}
-                </SelectItem>
-              ))}
+              {categories.map((category) => {
+                const value = category.toLowerCase();
+                return (
+                  <SelectItem key={category} value={value}>
+                    {category}
+                  </SelectItem>
+                );
+              })}
             </SelectContent>
           </Select>
         </div>
