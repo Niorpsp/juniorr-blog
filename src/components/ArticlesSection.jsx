@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Search } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import {
@@ -8,17 +8,30 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+
 import BlogCard from "./BlogCard";
-import blogPosts from "@/data/blogPosts";
+import postsApi from "@/services/postsApi";
 
 export default function ArticlesSection() {
-  // เก็บ Category ที่ผู้ใช้เลือก
-  // ค่าเริ่มต้นเป็น Highlight เพราะมันจะแสดงทั้งหมด จะเปลี่ยนได้หลังจากกดปุ่ม Category 
+  // -----------------------------
+  // State
+  // -----------------------------
   const [activeCategory, setActiveCategory] = useState("highlight");
+  const [posts, setPosts] = useState([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [limit] = useState(6);
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalPosts, setTotalPosts] = useState(0);
+  const [searchText, setSearchText] = useState("");
+  const [keyword, setKeyword] = useState("");
 
-  // รายการ Category
-  // ใช้สำหรับสร้างปุ่มบน Desktop
-  // และสร้าง Dropdown บน Mobile
+  // -----------------------------
+  // Category
+  // -----------------------------
+
+  // ใช้สร้างปุ่ม Desktop
+  // และ Dropdown บน Mobile
   const categories = [
     { value: "highlight", label: "Highlight" },
     { value: "cat", label: "Cat" },
@@ -26,23 +39,122 @@ export default function ArticlesSection() {
     { value: "general", label: "General" },
   ];
 
-  // กรองบทความตาม Category ที่ผู้ใช้เลือก
-  // ถ้าเลือก Highlight จะแสดงบทความทั้งหมด
-  const filteredPosts = activeCategory === "highlight"
-    ? blogPosts
-    : blogPosts.filter
-      (post => post.category.toLowerCase() === activeCategory);
+  // -----------------------------
+  // ดึงข้อมูลบทความจาก API
+  // -----------------------------
+  const fetchPosts = async () => {
+    setIsLoading(true);
+
+    try {
+      const params = {
+        page: currentPage,
+        limit,
+        ...(activeCategory !== "highlight" && { category: activeCategory }),
+        ...(keyword && { keyword }),
+      };
+
+      const response = await postsApi.get("/posts", { params });
+      const data = response.data || {};
+
+      setPosts(data.posts || []);
+      setTotalPages(data.totalPages || 1);
+      setTotalPosts(data.totalPosts || 0);
+      setCurrentPage(data.currentPage || currentPage);
+    } catch (error) {
+      console.error("Error fetching posts:", error);
+      setPosts([]);
+      setTotalPages(1);
+      setTotalPosts(0);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // -----------------------------
+  // โหลดข้อมูลเมื่อเปิดเว็บไซต์ครั้งแรก และเมื่อ filter/search/page เปลี่ยน
+  // -----------------------------
+  useEffect(() => {
+    fetchPosts();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeCategory, currentPage, keyword]);
+
+  useEffect(() => {
+    const timer = window.setTimeout(() => {
+      setCurrentPage(1);
+      setKeyword(searchText.trim());
+    }, 500);
+
+    return () => window.clearTimeout(timer);
+  }, [searchText]);
+
+  const handleCategoryChange = (category) => {
+    setActiveCategory(category);
+    setCurrentPage(1);
+  };
+
+  const handlePageChange = (page) => {
+    if (page < 1 || page > totalPages || page === currentPage) {
+      return;
+    }
+
+    setCurrentPage(page);
+  };
+
+  const paginationRange = useMemo(() => {
+    if (totalPages <= 5) {
+      return Array.from({ length: totalPages }, (_, index) => index + 1);
+    }
+
+    const range = [];
+    const start = Math.max(1, currentPage - 1);
+    const end = Math.min(totalPages, currentPage + 1);
+
+    if (start > 1) {
+      range.push(1);
+      if (start > 2) range.push("start-ellipsis");
+    }
+
+    for (let page = start; page <= end; page += 1) {
+      range.push(page);
+    }
+
+    if (end < totalPages) {
+      if (end < totalPages - 1) range.push("end-ellipsis");
+      range.push(totalPages);
+    }
+
+    return range;
+  }, [currentPage, totalPages]);
 
   return (
     <section className="mx-auto mb-10 max-w-7xl px-4 md:px-6 lg:px-8">
-
       {/* Title */}
-      <div className="mb-4">
-        <h2 className="text-2xl font-bold tracking-tight text-slate-950">
-          Latest articles
-        </h2>
-      </div>
+      <div className="mb-4 flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
+        <div>
+          <h2 className="text-2xl font-bold tracking-tight text-slate-950">
+            Latest articles
+          </h2>
+          <p className="mt-2 text-sm text-slate-600">
+            Showing {posts.length} of {totalPosts} articles
+          </p>
+        </div>
 
+        <div className="flex flex-wrap gap-2 text-sm text-slate-600">
+          <span className="rounded-full bg-slate-100 px-3 py-1">
+            Page {currentPage} / {totalPages}
+          </span>
+          {activeCategory !== "highlight" && (
+            <span className="rounded-full bg-slate-100 px-3 py-1">
+              Category: {activeCategory}
+            </span>
+          )}
+          {keyword && (
+            <span className="rounded-full bg-slate-100 px-3 py-1">
+              Search: {keyword}
+            </span>
+          )}
+        </div>
+      </div>
 
       {/* Search + Category */}
       <div
@@ -56,104 +168,69 @@ export default function ArticlesSection() {
           md:justify-between
         "
       >
-
-        {/* Desktop Category Filter */}
+        {/* Desktop Category */}
         <div className="hidden md:flex flex-wrap gap-3">
           {categories.map((category) => {
-
-            // ตรวจสอบว่าปุ่มนี้เป็น Category ที่ถูกเลือกอยู่หรือไม่
+            // ตรวจสอบว่าปุ่มนี้ถูกเลือกอยู่หรือไม่
             const isActive = activeCategory === category.value;
 
             return (
-
-              // สร้างปุ่ม Filter ของแต่ละ Category
               <button
                 key={category.value}
-
-                // ป้องกันปุ่มทำงานเหมือนปุ่ม Submit
                 type="button"
-
-                // ถ้าปุ่มนี้ถูกเลือกอยู่ จะไม่สามารถกดซ้ำได้
                 disabled={isActive}
-
-                // เมื่อกดปุ่ม จะเปลี่ยน Category ที่กำลังใช้งาน
-                onClick={() => setActiveCategory(category.value)}
+                onClick={() => handleCategoryChange(category.value)}
                 className={`
-          rounded-full
-          px-5
-          py-2.5
-          text-sm
-          font-semibold
-          transition
-          disabled:cursor-not-allowed
-          ${isActive
-                    ? "bg-slate-950 text-white"
-                    : "bg-white text-slate-700 ring-1 ring-slate-200 hover:bg-slate-50"
+                  rounded-full
+                  px-5
+                  py-2.5
+                  text-sm
+                  font-semibold
+                  transition
+                  disabled:cursor-not-allowed
+                  ${
+                    isActive
+                      ? "bg-slate-950 text-white"
+                      : "bg-white text-slate-700 ring-1 ring-slate-200 hover:bg-slate-50"
                   }
-        `}
+                `}
               >
                 {category.label}
               </button>
-
             );
           })}
         </div>
 
-
         {/* Mobile Category */}
         <div className="w-full md:hidden">
-
-          {/* สร้าง Select สำหรับ Mobile เพื่อให้ผู้ใช้เลือก Category */}
           <Select
-
-            // ค่า Category ที่กำลังถูกเลือกอยู่
-            // ค่าเริ่มต้นคือ Highlight
             value={activeCategory}
-
-            // เมื่อผู้ใช้เลือก Category ใหม่
-            // จะอัปเดตค่า activeCategory
-            onValueChange={(value) => setActiveCategory(value)}
+            onValueChange={(value) => handleCategoryChange(value)}
           >
-
-            {/* ปุ่มสำหรับเปิด Dropdown */}
             <SelectTrigger
               className="
-      w-full
-      rounded-full
-      border
-      border-slate-200
-      bg-white
-      px-5
-      py-3
-      text-sm
-      text-slate-900
-    "
+                w-full
+                rounded-full
+                border
+                border-slate-200
+                bg-white
+                px-5
+                py-3
+                text-sm
+                text-slate-900
+              "
             >
-
-              {/* แสดงชื่อ Category ที่กำลังถูกเลือก */}
               <SelectValue placeholder="Select category" />
-
             </SelectTrigger>
 
-            {/* รายการ Category ทั้งหมด */}
             <SelectContent>
-
-              {/* สร้างรายการ Category จาก Array */}
               {categories.map((category) => (
-
-                <SelectItem
-                  key={category.value}
-                  value={category.value}
-                >
+                <SelectItem key={category.value} value={category.value}>
                   {category.label}
                 </SelectItem>
-
               ))}
-
             </SelectContent>
-
           </Select>
-
         </div>
 
         {/* Search */}
@@ -170,9 +247,11 @@ export default function ArticlesSection() {
               text-slate-400
             "
           />
-          {/* ช่องค้นหา (ตอนนี้เป็นแค่ UI ยังไม่ได้เชื่อมกับการค้นหา) */}
+
           <Input
             type="text"
+            value={searchText}
+            onChange={(event) => setSearchText(event.target.value)}
             placeholder="Search"
             className="
               w-full
@@ -190,24 +269,80 @@ export default function ArticlesSection() {
             "
           />
         </div>
-
       </div>
 
-      {/* Blog Cards Grid */}
-      <div className="mt-8 grid grid-cols-1 md:grid-cols-2 gap-8">
-        {filteredPosts.map((post) => (
-          <BlogCard
-            key={post.id}
-            image={post.image}
-            category={post.category}
-            title={post.title}
-            description={post.description}
-            author={post.author}
-            date={post.date}
-          />
-        ))}
-      </div>
+      {/* Loading */}
+      {isLoading && <p className="mt-8 text-center">Loading...</p>}
 
+      {!isLoading && posts.length === 0 && (
+        <p className="mt-8 text-center text-slate-600">
+          No posts found for the selected filters.
+        </p>
+      )}
+
+      {!isLoading && posts.length > 0 && (
+        <div className="mt-8 grid grid-cols-1 gap-8 md:grid-cols-2">
+          {posts.map((post) => (
+            <BlogCard
+              key={post.id}
+              id={post.id}
+              image={post.image}
+              category={post.category}
+              title={post.title}
+              description={post.description}
+              author={post.author}
+              date={post.date}
+            />
+          ))}
+        </div>
+      )}
+
+      {!isLoading && totalPages > 1 && (
+        <div className="mt-8 flex flex-wrap items-center justify-center gap-2">
+          <button
+            type="button"
+            onClick={() => handlePageChange(currentPage - 1)}
+            disabled={currentPage === 1}
+            className="rounded-full border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            Previous
+          </button>
+
+          {paginationRange.map((page) => {
+            if (page === "start-ellipsis" || page === "end-ellipsis") {
+              return (
+                <span key={page} className="px-3 text-sm text-slate-500">
+                  ...
+                </span>
+              );
+            }
+
+            return (
+              <button
+                key={page}
+                type="button"
+                onClick={() => handlePageChange(page)}
+                className={`rounded-full px-4 py-2 text-sm font-semibold transition ${
+                  page === currentPage
+                    ? "bg-slate-950 text-white"
+                    : "border border-slate-300 bg-white text-slate-700 hover:bg-slate-50"
+                }`}
+              >
+                {page}
+              </button>
+            );
+          })}
+
+          <button
+            type="button"
+            onClick={() => handlePageChange(currentPage + 1)}
+            disabled={currentPage === totalPages}
+            className="rounded-full border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            Next
+          </button>
+        </div>
+      )}
     </section>
   );
 }
