@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
-import { ArrowLeft, Copy, Facebook, Linkedin, Twitter } from "lucide-react";
+import { ArrowLeft, Copy } from "lucide-react";
+import { FaFacebook, FaLinkedin, FaXTwitter } from "react-icons/fa6";
 import { toast } from "sonner";
 import postsApi from "@/services/postsApi";
 
@@ -103,7 +104,7 @@ export default function ViewPost() {
             onClick={() => openShare("https://www.facebook.com/share.php?u=")}
             className="inline-flex items-center gap-2 rounded-full border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-900 transition hover:bg-slate-50"
           >
-            <Facebook size={16} /> Facebook
+            <FaFacebook size={16} /> Facebook
           </button>
           <button
             type="button"
@@ -112,14 +113,14 @@ export default function ViewPost() {
             }
             className="inline-flex items-center gap-2 rounded-full border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-900 transition hover:bg-slate-50"
           >
-            <Linkedin size={16} /> LinkedIn
+            <FaLinkedin size={16} /> LinkedIn
           </button>
           <button
             type="button"
             onClick={() => openShare("https://www.twitter.com/share?&url=")}
             className="inline-flex items-center gap-2 rounded-full border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-900 transition hover:bg-slate-50"
           >
-            <Twitter size={16} /> Twitter
+            <FaXTwitter size={16} /> Twitter
           </button>
         </div>
       </div>
