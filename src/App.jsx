@@ -8,7 +8,7 @@ import "./App.css";
 // BrowserRouter : เปิดใช้งานระบบ Routing
 // Routes        : รวม Route ทั้งหมด
 // Route         : กำหนด URL กับ Component ที่จะแสดง
-import { BrowserRouter, Route, Routes } from "react-router-dom";
+import { BrowserRouter, Link, Route, Routes } from "react-router-dom";
 // Sonner
 // Library สำหรับแสดง Notification (Toast)
 import { Toaster } from "sonner";
@@ -145,6 +145,25 @@ function App() {
                   <p className="mt-3 text-slate-600">
                     You are signed in successfully.
                   </p>
+                </div>
+              }
+            />
+            <Route
+              path="*"
+              element={
+                <div className="mx-auto max-w-5xl px-4 py-16 text-center text-slate-600">
+                  <p className="text-xl font-semibold text-slate-950">
+                    Page Not Found
+                  </p>
+                  <p className="mt-3 text-sm text-slate-600">
+                    The page you are looking for does not exist.
+                  </p>
+                  <Link
+                    to="/"
+                    className="mt-6 inline-flex rounded-full border border-slate-300 bg-white px-6 py-3 text-sm font-semibold text-slate-900 transition hover:bg-slate-50"
+                  >
+                    Go To Homepage
+                  </Link>
                 </div>
               }
             />

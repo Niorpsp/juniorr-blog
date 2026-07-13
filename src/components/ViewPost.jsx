@@ -3,6 +3,7 @@ import { Link, useParams } from "react-router-dom";
 import { ArrowLeft, Copy } from "lucide-react";
 import { FaFacebook, FaLinkedin, FaXTwitter } from "react-icons/fa6";
 import { toast } from "sonner";
+import ReactMarkdown from "react-markdown";
 import postsApi from "@/services/postsApi";
 
 export default function ViewPost() {
@@ -148,8 +149,8 @@ export default function ViewPost() {
             />
 
             <div className="mt-8 space-y-6 text-slate-700">
-              <div className="whitespace-pre-line text-base leading-8">
-                {post.content}
+              <div className="markdown text-base leading-8">
+                <ReactMarkdown>{post.content}</ReactMarkdown>
               </div>
             </div>
           </div>
