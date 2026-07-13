@@ -5,6 +5,7 @@ import { FaFacebook, FaLinkedin, FaXTwitter } from "react-icons/fa6";
 import { toast } from "sonner";
 import ReactMarkdown from "react-markdown";
 import postsApi from "@/services/postsApi";
+import blogPosts from "@/data/blogPosts";
 
 export default function ViewPost() {
   const { postId } = useParams();
@@ -12,6 +13,7 @@ export default function ViewPost() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState("");
   const [shareUrl, setShareUrl] = useState("");
+  const [comment, setComment] = useState("");
 
   useEffect(() => {
     if (typeof window !== "undefined") {
@@ -26,10 +28,30 @@ export default function ViewPost() {
 
       try {
         const response = await postsApi.get(`/posts/${postId}`);
-        setPost(response.data);
+        const apiPost = response?.data;
+
+        if (apiPost && Object.keys(apiPost).length > 0) {
+          setPost(apiPost);
+        } else {
+          const localPost = blogPosts.find(
+            (item) => String(item.id) === String(postId),
+          );
+          if (localPost) {
+            setPost(localPost);
+          } else {
+            setError("Article not found.");
+          }
+        }
       } catch (err) {
-        setError("Unable to load the article. Please try again.");
         console.error(err);
+        const localPost = blogPosts.find(
+          (item) => String(item.id) === String(postId),
+        );
+        if (localPost) {
+          setPost(localPost);
+        } else {
+          setError("Unable to load the article. Please try again.");
+        }
       } finally {
         setIsLoading(false);
       }
@@ -57,6 +79,16 @@ export default function ViewPost() {
       "_blank",
       "noopener,noreferrer",
     );
+  };
+
+  const handleCommentSubmit = () => {
+    if (!comment.trim()) {
+      toast.error("Please write a comment before you send.");
+      return;
+    }
+
+    toast.success("Your comment has been submitted.");
+    setComment("");
   };
 
   if (isLoading) {
@@ -91,38 +123,45 @@ export default function ViewPost() {
           <ArrowLeft size={16} /> Back to home
         </Link>
 
-        <div className="flex gap-2">
+        <div className="flex flex-wrap items-center gap-3">
           <button
             type="button"
             onClick={handleCopy}
-            className="inline-flex items-center gap-2 rounded-full border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-900 transition hover:bg-slate-50"
+            className="inline-flex items-center gap-2 rounded-full border border-slate-300 bg-slate-950 px-5 py-2 text-sm font-semibold text-white transition hover:bg-slate-800"
           >
             <Copy size={16} /> Copy
           </button>
 
-          <button
-            type="button"
-            onClick={() => openShare("https://www.facebook.com/share.php?u=")}
-            className="inline-flex items-center gap-2 rounded-full border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-900 transition hover:bg-slate-50"
-          >
-            <FaFacebook size={16} /> Facebook
-          </button>
-          <button
-            type="button"
-            onClick={() =>
-              openShare("https://www.linkedin.com/sharing/share-offsite/?url=")
-            }
-            className="inline-flex items-center gap-2 rounded-full border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-900 transition hover:bg-slate-50"
-          >
-            <FaLinkedin size={16} /> LinkedIn
-          </button>
-          <button
-            type="button"
-            onClick={() => openShare("https://www.twitter.com/share?&url=")}
-            className="inline-flex items-center gap-2 rounded-full border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-900 transition hover:bg-slate-50"
-          >
-            <FaXTwitter size={16} /> Twitter
-          </button>
+          <div className="inline-flex items-center gap-2 rounded-full border border-slate-300 bg-white p-1 shadow-sm">
+            <button
+              type="button"
+              aria-label="Share on Facebook"
+              onClick={() => openShare("https://www.facebook.com/share.php?u=")}
+              className="inline-flex h-10 w-10 items-center justify-center rounded-full text-slate-700 transition hover:bg-slate-100"
+            >
+              <FaFacebook size={16} />
+            </button>
+            <button
+              type="button"
+              aria-label="Share on LinkedIn"
+              onClick={() =>
+                openShare(
+                  "https://www.linkedin.com/sharing/share-offsite/?url=",
+                )
+              }
+              className="inline-flex h-10 w-10 items-center justify-center rounded-full text-slate-700 transition hover:bg-slate-100"
+            >
+              <FaLinkedin size={16} />
+            </button>
+            <button
+              type="button"
+              aria-label="Share on Twitter"
+              onClick={() => openShare("https://www.twitter.com/share?&url=")}
+              className="inline-flex h-10 w-10 items-center justify-center rounded-full text-slate-700 transition hover:bg-slate-100"
+            >
+              <FaXTwitter size={16} />
+            </button>
+          </div>
         </div>
       </div>
 
@@ -153,6 +192,28 @@ export default function ViewPost() {
                 <ReactMarkdown>{post.content}</ReactMarkdown>
               </div>
             </div>
+
+            <section className="mt-10 rounded-[1.5rem] border border-slate-200 bg-slate-50 p-6">
+              <h2 className="text-lg font-semibold text-slate-950">Comment</h2>
+              <p className="mt-2 text-sm text-slate-600">
+                Share your thoughts about this article.
+              </p>
+
+              <textarea
+                value={comment}
+                onChange={(event) => setComment(event.target.value)}
+                placeholder="What are your thoughts?"
+                className="mt-4 min-h-[140px] w-full resize-none rounded-3xl border border-slate-300 bg-white px-4 py-4 text-sm text-slate-900 outline-none transition focus:border-slate-900 focus:ring-2 focus:ring-slate-200"
+              />
+
+              <button
+                type="button"
+                onClick={handleCommentSubmit}
+                className="mt-4 inline-flex items-center justify-center rounded-full bg-slate-950 px-6 py-3 text-sm font-semibold text-white transition hover:bg-slate-800"
+              >
+                Send
+              </button>
+            </section>
           </div>
 
           <aside className="rounded-[1.5rem] border border-slate-200 bg-slate-50 p-6">

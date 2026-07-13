@@ -9,7 +9,7 @@ export default function NavBar() {
           to="/"
           className="text-2xl font-extrabold tracking-tight text-slate-950"
         >
-          hh.
+          niorr blog
         </Link>
 
         <div className="hidden md:flex items-center gap-3">

@@ -8,7 +8,7 @@ import "./App.css";
 // BrowserRouter : เปิดใช้งานระบบ Routing
 // Routes        : รวม Route ทั้งหมด
 // Route         : กำหนด URL กับ Component ที่จะแสดง
-import { BrowserRouter, Link, Route, Routes } from "react-router-dom";
+import { BrowserRouter, Link, Navigate, Route, Routes } from "react-router-dom";
 // Sonner
 // Library สำหรับแสดง Notification (Toast)
 import { Toaster } from "sonner";
@@ -21,6 +21,12 @@ import ArticlesSection from "./components/ArticlesSection";
 import ViewPost from "./components/ViewPost";
 import Footer from "./components/Footer";
 import AuthPage from "./components/AuthPage";
+import AdminLayout from "./components/admin/AdminLayout";
+import ArticlesManagement from "./components/admin/ArticlesManagement";
+import CategoriesManagement from "./components/admin/CategoriesManagement";
+import ProfileManagement from "./components/admin/ProfileManagement";
+import NotificationsManagement from "./components/admin/NotificationsManagement";
+import PasswordReset from "./components/admin/PasswordReset";
 
 // =====================================================
 // App Component
@@ -148,6 +154,21 @@ function App() {
                 </div>
               }
             />
+            <Route path="/admin" element={<AdminLayout />}>
+              <Route
+                index
+                element={<Navigate to="/admin/articles" replace />}
+              />
+              <Route path="articles" element={<ArticlesManagement />} />
+              <Route path="categories" element={<CategoriesManagement />} />
+              <Route path="profile" element={<ProfileManagement />} />
+              <Route
+                path="notifications"
+                element={<NotificationsManagement />}
+              />
+              <Route path="reset-password" element={<PasswordReset />} />
+            </Route>
+
             <Route
               path="*"
               element={

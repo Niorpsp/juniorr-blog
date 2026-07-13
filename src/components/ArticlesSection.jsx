@@ -10,19 +10,13 @@ import {
 } from "@/components/ui/select";
 
 import BlogCard from "./BlogCard";
-import postsApi from "@/services/postsApi";
+import blogPosts from "@/data/blogPosts";
 
 export default function ArticlesSection() {
   // -----------------------------
   // State
   // -----------------------------
   const [activeCategory, setActiveCategory] = useState("highlight");
-  const [posts, setPosts] = useState([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [currentPage, setCurrentPage] = useState(1);
-  const [limit] = useState(6);
-  const [totalPages, setTotalPages] = useState(1);
-  const [totalPosts, setTotalPosts] = useState(0);
   const [searchText, setSearchText] = useState("");
   const [keyword, setKeyword] = useState("");
 
@@ -40,47 +34,30 @@ export default function ArticlesSection() {
   ];
 
   // -----------------------------
-  // ดึงข้อมูลบทความจาก API
+  // Filter local blog post data
   // -----------------------------
-  const fetchPosts = async () => {
-    setIsLoading(true);
+  const filteredPosts = useMemo(() => {
+    let results = blogPosts;
 
-    try {
-      const params = {
-        page: currentPage,
-        limit,
-        ...(activeCategory !== "Highlight" && { category: activeCategory }),
-        ...(keyword && { keyword }),
-      };
-
-      const response = await postsApi.get("/posts", { params });
-      const data = response.data || {};
-
-      setPosts(data.posts ?? []);
-      setTotalPages(data.totalPages ?? 1);
-      setTotalPosts(data.totalPosts ?? 0);
-      setCurrentPage(data.currentPage ?? currentPage);
-    } catch (error) {
-      console.error("Error fetching posts:", error);
-      setPosts([]);
-      setTotalPages(1);
-      setTotalPosts(0);
-    } finally {
-      setIsLoading(false);
+    if (activeCategory !== "highlight") {
+      results = results.filter((post) => post.category === activeCategory);
     }
-  };
 
-  // -----------------------------
-  // โหลดข้อมูลเมื่อเปิดเว็บไซต์ครั้งแรก และเมื่อ filter/search/page เปลี่ยน
-  // -----------------------------
-  useEffect(() => {
-    fetchPosts();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [activeCategory, currentPage, keyword]);
+    if (keyword) {
+      const search = keyword.toLowerCase();
+      results = results.filter(
+        (post) =>
+          post.title.toLowerCase().includes(search) ||
+          post.description.toLowerCase().includes(search) ||
+          post.content.toLowerCase().includes(search),
+      );
+    }
+
+    return results;
+  }, [activeCategory, keyword]);
 
   useEffect(() => {
     const timer = window.setTimeout(() => {
-      setCurrentPage(1);
       setKeyword(searchText.trim());
     }, 500);
 
@@ -89,42 +66,7 @@ export default function ArticlesSection() {
 
   const handleCategoryChange = (category) => {
     setActiveCategory(category);
-    setCurrentPage(1);
   };
-
-  const handlePageChange = (page) => {
-    if (page < 1 || page > totalPages || page === currentPage) {
-      return;
-    }
-
-    setCurrentPage(page);
-  };
-
-  const paginationRange = useMemo(() => {
-    if (totalPages <= 5) {
-      return Array.from({ length: totalPages }, (_, index) => index + 1);
-    }
-
-    const range = [];
-    const start = Math.max(1, currentPage - 1);
-    const end = Math.min(totalPages, currentPage + 1);
-
-    if (start > 1) {
-      range.push(1);
-      if (start > 2) range.push("start-ellipsis");
-    }
-
-    for (let page = start; page <= end; page += 1) {
-      range.push(page);
-    }
-
-    if (end < totalPages) {
-      if (end < totalPages - 1) range.push("end-ellipsis");
-      range.push(totalPages);
-    }
-
-    return range;
-  }, [currentPage, totalPages]);
 
   return (
     <section className="mx-auto mb-10 max-w-7xl px-4 md:px-6 lg:px-8">
@@ -135,14 +77,11 @@ export default function ArticlesSection() {
             Latest articles
           </h2>
           <p className="mt-2 text-sm text-slate-600">
-            Showing {posts.length} of {totalPosts} articles
+            Showing {filteredPosts.length} articles
           </p>
         </div>
 
         <div className="flex flex-wrap gap-2 text-sm text-slate-600">
-          <span className="rounded-full bg-slate-100 px-3 py-1">
-            Page {currentPage} / {totalPages}
-          </span>
           {activeCategory !== "highlight" && (
             <span className="rounded-full bg-slate-100 px-3 py-1">
               Category:{" "}
@@ -192,7 +131,7 @@ export default function ArticlesSection() {
                   ${
                     isActive
                       ? "bg-slate-950 text-white"
-                      : "bg-white text-slate-700 ring-1 ring-slate-200 hover:bg-slate-50"
+                      : "bg-slate-100 text-slate-700 ring-1 ring-slate-200 hover:bg-slate-200"
                   }
                 `}
               >
@@ -272,18 +211,15 @@ export default function ArticlesSection() {
         </div>
       </div>
 
-      {/* Loading */}
-      {isLoading && <p className="mt-8 text-center">Loading...</p>}
-
-      {!isLoading && posts.length === 0 && (
+      {!filteredPosts.length && (
         <p className="mt-8 text-center text-slate-600">
           No posts found for the selected filters.
         </p>
       )}
 
-      {!isLoading && posts.length > 0 && (
+      {filteredPosts.length > 0 && (
         <div className="mt-8 grid grid-cols-1 gap-8 md:grid-cols-2">
-          {posts.map((post) => (
+          {filteredPosts.map((post) => (
             <BlogCard
               key={post.id}
               id={post.id}
@@ -295,53 +231,6 @@ export default function ArticlesSection() {
               date={post.date}
             />
           ))}
-        </div>
-      )}
-
-      {!isLoading && totalPages > 1 && (
-        <div className="mt-8 flex flex-wrap items-center justify-center gap-2">
-          <button
-            type="button"
-            onClick={() => handlePageChange(currentPage - 1)}
-            disabled={currentPage === 1}
-            className="rounded-full border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
-          >
-            Previous
-          </button>
-
-          {paginationRange.map((page) => {
-            if (page === "start-ellipsis" || page === "end-ellipsis") {
-              return (
-                <span key={page} className="px-3 text-sm text-slate-500">
-                  ...
-                </span>
-              );
-            }
-
-            return (
-              <button
-                key={page}
-                type="button"
-                onClick={() => handlePageChange(page)}
-                className={`rounded-full px-4 py-2 text-sm font-semibold transition ${
-                  page === currentPage
-                    ? "bg-slate-950 text-white"
-                    : "border border-slate-300 bg-white text-slate-700 hover:bg-slate-50"
-                }`}
-              >
-                {page}
-              </button>
-            );
-          })}
-
-          <button
-            type="button"
-            onClick={() => handlePageChange(currentPage + 1)}
-            disabled={currentPage === totalPages}
-            className="rounded-full border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
-          >
-            Next
-          </button>
         </div>
       )}
     </section>
