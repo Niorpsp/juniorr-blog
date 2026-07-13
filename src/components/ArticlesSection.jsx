@@ -10,7 +10,6 @@ import {
 } from "@/components/ui/select";
 
 import BlogCard from "./BlogCard";
-import blogPosts from "@/data/blogPosts";
 import postsApi from "@/services/postsApi";
 
 export default function ArticlesSection() {
@@ -18,8 +17,8 @@ export default function ArticlesSection() {
   // State
   // -----------------------------
   const [activeCategory, setActiveCategory] = useState("highlight");
-  const [posts, setPosts] = useState(blogPosts);
-  const [isLoading, setIsLoading] = useState(false);
+  const [posts, setPosts] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
   const [currentPage, setCurrentPage] = useState(1);
   const [limit] = useState(6);
   const [totalPages, setTotalPages] = useState(1);
@@ -33,7 +32,12 @@ export default function ArticlesSection() {
 
   // ใช้สร้างปุ่ม Desktop
   // และ Dropdown บน Mobile
-  const categories = ["Highlight", "Cat", "Inspiration", "General"];
+  const categories = [
+    { value: "highlight", label: "Highlight" },
+    { value: "Cat", label: "Cat" },
+    { value: "Inspiration", label: "Inspiration" },
+    { value: "General", label: "General" },
+  ];
 
   // -----------------------------
   // ดึงข้อมูลบทความจาก API
@@ -45,17 +49,17 @@ export default function ArticlesSection() {
       const params = {
         page: currentPage,
         limit,
-        ...(activeCategory !== "highlight" && { category: activeCategory }),
+        ...(activeCategory !== "Highlight" && { category: activeCategory }),
         ...(keyword && { keyword }),
       };
 
       const response = await postsApi.get("/posts", { params });
       const data = response.data || {};
 
-      setPosts(data.posts || []);
-      setTotalPages(data.totalPages || 1);
-      setTotalPosts(data.totalPosts || 0);
-      setCurrentPage(data.currentPage || currentPage);
+      setPosts(data.posts ?? []);
+      setTotalPages(data.totalPages ?? 1);
+      setTotalPosts(data.totalPosts ?? 0);
+      setCurrentPage(data.currentPage ?? currentPage);
     } catch (error) {
       console.error("Error fetching posts:", error);
       setPosts([]);
@@ -141,7 +145,9 @@ export default function ArticlesSection() {
           </span>
           {activeCategory !== "highlight" && (
             <span className="rounded-full bg-slate-100 px-3 py-1">
-              Category: {activeCategory}
+              Category:{" "}
+              {categories.find((item) => item.value === activeCategory)
+                ?.label ?? activeCategory}
             </span>
           )}
           {keyword && (
@@ -167,15 +173,14 @@ export default function ArticlesSection() {
         {/* Desktop Category */}
         <div className="hidden md:flex flex-wrap gap-3">
           {categories.map((category) => {
-            const value = category.toLowerCase();
-            const isActive = activeCategory === value;
+            const isActive = activeCategory === category.value;
 
             return (
               <button
-                key={category}
+                key={category.value}
                 type="button"
                 disabled={isActive}
-                onClick={() => handleCategoryChange(value)}
+                onClick={() => handleCategoryChange(category.value)}
                 className={`
                   rounded-full
                   px-5
@@ -191,7 +196,7 @@ export default function ArticlesSection() {
                   }
                 `}
               >
-                {category}
+                {category.label}
               </button>
             );
           })}
@@ -220,14 +225,11 @@ export default function ArticlesSection() {
             </SelectTrigger>
 
             <SelectContent>
-              {categories.map((category) => {
-                const value = category.toLowerCase();
-                return (
-                  <SelectItem key={category} value={value}>
-                    {category}
-                  </SelectItem>
-                );
-              })}
+              {categories.map((category) => (
+                <SelectItem key={category.value} value={category.value}>
+                  {category.label}
+                </SelectItem>
+              ))}
             </SelectContent>
           </Select>
         </div>
