@@ -11,11 +11,11 @@ app.use(express.json());
 const posts = [];
 let nextPostId = 1;
 
-app.get('/health', (req, res) => {
+app.get('/api/health', (req, res) => {
     return res.status(200).json({ message: 'OK' });
 });
 
-app.get('/profiles', (req, res) => {
+app.get('/api/profiles', (req, res) => {
     return res.json({
         data: {
             name: 'john',
@@ -24,7 +24,7 @@ app.get('/profiles', (req, res) => {
     });
 });
 
-app.post('/posts', async (req, res) => {
+app.post('/api/posts', async (req, res) => {
     try {
         const newPost = req.body || {};
         const title = newPost.title;
@@ -73,7 +73,7 @@ app.post('/posts', async (req, res) => {
     }
 });
 
-app.get('/posts', async (req, res) => {
+app.get('/api/posts', async (req, res) => {
     try {
         const page = Number(req.query.page) || 1;
         const limit = Number(req.query.limit) || 6;
@@ -170,7 +170,7 @@ app.get('/posts', async (req, res) => {
     }
 });
 
-app.get('/posts/:postId', async (req, res) => {
+app.get('/api/posts/:postId', async (req, res) => {
     try {
         const postId = req.params.postId;
         const hasDbConnection = Boolean(connectionPool);
@@ -195,7 +195,7 @@ app.get('/posts/:postId', async (req, res) => {
     }
 });
 
-app.put('/posts/:postId', async (req, res) => {
+app.put('/api/posts/:postId', async (req, res) => {
     try {
         const postId = req.params.postId;
         if (connectionPool) {
@@ -232,7 +232,7 @@ app.put('/posts/:postId', async (req, res) => {
     }
 });
 
-app.delete('/posts/:postId', async (req, res) => {
+app.delete('/api/posts/:postId', async (req, res) => {
     try {
         const postId = req.params.postId;
         if (connectionPool) {

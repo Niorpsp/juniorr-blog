@@ -8,13 +8,13 @@ const HealthTestPage = () => {
   const [error, setError] = useState("");
 
   const apiBaseUrl =
-    import.meta.env.VITE_API_BASE_URL || "http://localhost:4000";
+    import.meta.env.VITE_API_BASE_URL || "";
 
   const handleHealthCheck = async () => {
     setLoading(true);
     setError("");
     try {
-      const response = await axios.get(`${apiBaseUrl}/health`);
+      const response = await axios.get(`${apiBaseUrl}/api/health`);
       setHealthResult(response.data);
     } catch (err) {
       setError(err.message || "Health check failed");
@@ -27,7 +27,7 @@ const HealthTestPage = () => {
     setLoading(true);
     setError("");
     try {
-      const response = await axios.post(`${apiBaseUrl}/posts`, {
+      const response = await axios.post(`${apiBaseUrl}/api/posts`, {
         title: "Frontend test post",
         content: "Created from React health test page",
         author: "React User",
