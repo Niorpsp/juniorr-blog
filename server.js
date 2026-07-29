@@ -258,10 +258,12 @@ app.get('/', (req, res) => {
     return res.status(200).json({ message: 'Server is running' });
 });
 
-if (process.env.NODE_ENV !== 'test') {
+const shouldListen = !process.env.VERCEL && process.env.NODE_ENV !== 'test';
+if (shouldListen) {
     app.listen(port, () => {
         console.log(`Server is running at ${port}`);
     });
 }
 
+export default app;
 export { app };
