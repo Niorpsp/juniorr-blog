@@ -1,5 +1,6 @@
 import express from 'express';
 import cors from 'cors';
+import connectionPool from './utils/db.mjs';
 
 const app = express();
 const port = process.env.PORT || 4001;
@@ -7,7 +8,7 @@ const port = process.env.PORT || 4001;
 app.use(cors());
 app.use(express.json());
 
-let posts = [];
+const posts = [];
 let nextPostId = 1;
 
 app.get('/profiles', (req, res) => {
@@ -19,36 +20,58 @@ app.get('/profiles', (req, res) => {
     });
 });
 
-app.post('/posts', (req, res) => {
+app.post('/posts', async (req, res) => {
     try {
-        const { title, content, author, category, description } = req.body || {};
+        const newPost = req.body || {};
+        const title = newPost.title;
+        const content = newPost.content;
+        const description = newPost.description || '';
+        const author = newPost.author || 'Unknown';
+        const category = newPost.category || 'General';
 
-        if (!title || !content || !author || !category || !description) {
+        if (!title || !content || !description) {
             return res.status(400).json({
                 error: 'Missing required fields',
-                details: ['title', 'content', 'author', 'category', 'description'],
+                details: ['title', 'content', 'description'],
             });
         }
 
-        const newPost = {
+        const createdPost = {
             id: nextPostId++,
             title,
             content,
+            description,
             author,
             category,
-            description,
             createdAt: new Date().toISOString(),
         };
 
-        posts.push(newPost);
+        posts.push(createdPost);
 
-        return res.status(201).json({
-            data: newPost,
-        });
+        const hasDbConnection = Boolean(connectionPool);
+
+        if (hasDbConnection) {
+            const query = `
+                insert into posts (title, image, category_id, description, content, status_id)
+                values ($1, $2, $3, $4, $5, $6)
+            `;
+
+            const values = [
+                title,
+                newPost.image || '',
+                newPost.category_id || 1,
+                description,
+                content,
+                newPost.status_id || 1,
+            ];
+
+            await connectionPool.query(query, values);
+        }
+
+        return res.status(201).json({ data: createdPost });
     } catch (error) {
         return res.status(500).json({
-            error: 'Internal server error',
-            details: error.message,
+            message: 'Server could not create post because database connection',
         });
     }
 });
