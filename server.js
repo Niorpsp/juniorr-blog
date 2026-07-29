@@ -14,9 +14,9 @@ let nextPostId = 1;
 const users = [
     {
         id: 1,
-        name: 'Test User',
-        email: 'test@example.com',
-        password: 'password',
+        name: 'Admin User',
+        email: 'admin',
+        password: '123456',
     },
 ];
 let nextUserId = 2;
