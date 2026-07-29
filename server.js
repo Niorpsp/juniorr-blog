@@ -32,6 +32,9 @@ app.post('/posts', async (req, res) => {
         const description = newPost.description || '';
         const author = newPost.author || 'Unknown';
         const category = newPost.category || 'General';
+        const image = newPost.image || '';
+        const category_id = newPost.category_id || 1;
+        const status_id = newPost.status_id || 1;
 
         if (!title || !content || !description) {
             return res.status(400).json({
@@ -47,36 +50,207 @@ app.post('/posts', async (req, res) => {
             description,
             author,
             category,
+            image,
+            category_id,
+            status_id,
             createdAt: new Date().toISOString(),
         };
 
-        posts.push(createdPost);
-
         const hasDbConnection = Boolean(connectionPool);
-
         if (hasDbConnection) {
-            const query = `
-                insert into posts (title, image, category_id, description, content, status_id)
-                values ($1, $2, $3, $4, $5, $6)
-            `;
-
-            const values = [
-                title,
-                newPost.image || '',
-                newPost.category_id || 1,
-                description,
-                content,
-                newPost.status_id || 1,
-            ];
-
-            await connectionPool.query(query, values);
+            const query = `INSERT INTO posts (title, image, category_id, description, content, status_id) VALUES ($1, $2, $3, $4, $5, $6) RETURNING id`;
+            const values = [title, image, category_id, description, content, status_id];
+            const result = await connectionPool.query(query, values);
+            createdPost.id = result.rows[0]?.id || createdPost.id;
         }
 
+        posts.push(createdPost);
         return res.status(201).json({ data: createdPost });
     } catch (error) {
         return res.status(500).json({
             message: 'Server could not create post because database connection',
         });
+    }
+});
+
+app.get('/posts', async (req, res) => {
+    try {
+        const page = Number(req.query.page) || 1;
+        const limit = Number(req.query.limit) || 6;
+        const category = req.query.category || '';
+        const keyword = req.query.keyword || '';
+        const safePage = Math.max(1, page);
+        const safeLimit = Math.max(1, Math.min(100, limit));
+        const offset = (safePage - 1) * safeLimit;
+
+        const hasDbConnection = Boolean(connectionPool);
+        if (hasDbConnection) {
+            let query = `SELECT posts.id, posts.image, categories.name AS category, posts.title, posts.description, posts.date, posts.content, statuses.status, posts.likes_count FROM posts INNER JOIN categories ON posts.category_id = categories.id INNER JOIN statuses ON posts.status_id = statuses.id`;
+            let values = [];
+
+            if (category && keyword) {
+                query += ` WHERE categories.name ILIKE $1 AND (posts.title ILIKE $2 OR posts.description ILIKE $2 OR posts.content ILIKE $2)`;
+                values = [`%${category}%`, `%${keyword}%`];
+            } else if (category) {
+                query += ` WHERE categories.name ILIKE $1`;
+                values = [`%${category}%`];
+            } else if (keyword) {
+                query += ` WHERE posts.title ILIKE $1 OR posts.description ILIKE $1 OR posts.content ILIKE $1`;
+                values = [`%${keyword}%`];
+            }
+
+            query += ` ORDER BY posts.date DESC LIMIT $${values.length + 1} OFFSET $${values.length + 2}`;
+            values.push(safeLimit, offset);
+
+            const result = await connectionPool.query(query, values);
+
+            let countQuery = `SELECT COUNT(*) FROM posts INNER JOIN categories ON posts.category_id = categories.id INNER JOIN statuses ON posts.status_id = statuses.id`;
+            let countValues = values.slice(0, -2);
+            if (category && keyword) {
+                countQuery += ` WHERE categories.name ILIKE $1 AND (posts.title ILIKE $2 OR posts.description ILIKE $2 OR posts.content ILIKE $2)`;
+            } else if (category) {
+                countQuery += ` WHERE categories.name ILIKE $1`;
+            } else if (keyword) {
+                countQuery += ` WHERE posts.title ILIKE $1 OR posts.description ILIKE $1 OR posts.content ILIKE $1`;
+            }
+
+            const countResult = await connectionPool.query(countQuery, countValues);
+            const totalPosts = parseInt(countResult.rows[0].count, 10);
+            const responsePayload = {
+                data: {
+                    page: safePage,
+                    limit: safeLimit,
+                    totalPosts,
+                    totalPages: Math.ceil(totalPosts / safeLimit),
+                    posts: result.rows,
+                },
+            };
+            if (offset + safeLimit < totalPosts) {
+                responsePayload.data.nextPage = safePage + 1;
+            }
+            if (offset > 0) {
+                responsePayload.data.previousPage = safePage - 1;
+            }
+            return res.status(200).json(responsePayload);
+        }
+
+        let filtered = [...posts];
+        if (category) {
+            filtered = filtered.filter((item) => item.category.toLowerCase() === category.toLowerCase());
+        }
+        if (keyword) {
+            filtered = filtered.filter(
+                (item) =>
+                    item.title.toLowerCase().includes(keyword.toLowerCase()) ||
+                    item.description.toLowerCase().includes(keyword.toLowerCase()) ||
+                    item.content.toLowerCase().includes(keyword.toLowerCase())
+            );
+        }
+        const totalPosts = filtered.length;
+        const startIndex = (safePage - 1) * safeLimit;
+        const pageItems = filtered.slice(startIndex, startIndex + safeLimit);
+        const responsePayload = {
+            data: {
+                page: safePage,
+                limit: safeLimit,
+                totalPosts,
+                totalPages: Math.ceil(totalPosts / safeLimit),
+                posts: pageItems,
+            },
+        };
+        if (startIndex + safeLimit < totalPosts) {
+            responsePayload.data.nextPage = safePage + 1;
+        }
+        if (startIndex > 0) {
+            responsePayload.data.previousPage = safePage - 1;
+        }
+        return res.status(200).json(responsePayload);
+    } catch (error) {
+        return res.status(500).json({ message: 'Server could not retrieve posts' });
+    }
+});
+
+app.get('/posts/:postId', async (req, res) => {
+    try {
+        const postId = req.params.postId;
+        const hasDbConnection = Boolean(connectionPool);
+        if (hasDbConnection) {
+            const result = await connectionPool.query(
+                `SELECT posts.id, posts.image, categories.name AS category, posts.title, posts.description, posts.date, posts.content, statuses.status, posts.likes_count FROM posts INNER JOIN categories ON posts.category_id = categories.id INNER JOIN statuses ON posts.status_id = statuses.id WHERE posts.id = $1`,
+                [postId]
+            );
+            if (!result.rows[0]) {
+                return res.status(404).json({ message: `Server could not find a requested post (post id: ${postId})` });
+            }
+            return res.status(200).json({ data: result.rows[0] });
+        }
+
+        const foundPost = posts.find((item) => String(item.id) === String(postId));
+        if (!foundPost) {
+            return res.status(404).json({ message: `Server could not find a requested post (post id: ${postId})` });
+        }
+        return res.status(200).json({ data: foundPost });
+    } catch (error) {
+        return res.status(500).json({ message: 'Server could not read post because database issue' });
+    }
+});
+
+app.put('/posts/:postId', async (req, res) => {
+    try {
+        const postId = req.params.postId;
+        if (connectionPool) {
+            const updatedPost = { ...req.body, date: new Date() };
+            await connectionPool.query(
+                `UPDATE posts SET title = $2, image = $3, category_id = $4, description = $5, content = $6, status_id = $7, date = $8 WHERE id = $1`,
+                [
+                    postId,
+                    updatedPost.title,
+                    updatedPost.image,
+                    updatedPost.category_id,
+                    updatedPost.description,
+                    updatedPost.content,
+                    updatedPost.status_id,
+                    updatedPost.date,
+                ]
+            );
+            return res.status(200).json({ message: 'Updated post successfully' });
+        }
+
+        const index = posts.findIndex((item) => String(item.id) === String(postId));
+        if (index === -1) {
+            return res.status(404).json({ message: `Server could not find a requested post (post id: ${postId})` });
+        }
+        const updatedFields = req.body || {};
+        posts[index] = {
+            ...posts[index],
+            ...updatedFields,
+            updatedAt: new Date().toISOString(),
+        };
+        return res.status(200).json({ data: posts[index] });
+    } catch (error) {
+        return res.status(500).json({ message: 'Server could not update post because database connection' });
+    }
+});
+
+app.delete('/posts/:postId', async (req, res) => {
+    try {
+        const postId = req.params.postId;
+        if (connectionPool) {
+            const result = await connectionPool.query(`DELETE FROM posts WHERE id = $1 RETURNING id`, [postId]);
+            if (!result.rowCount) {
+                return res.status(404).json({ message: `Server could not find a requested post (post id: ${postId})` });
+            }
+            return res.status(200).json({ message: 'Post deleted successfully' });
+        }
+
+        const index = posts.findIndex((item) => String(item.id) === String(postId));
+        if (index === -1) {
+            return res.status(404).json({ message: `Server could not find a requested post (post id: ${postId})` });
+        }
+        posts.splice(index, 1);
+        return res.status(200).json({ message: 'Post deleted successfully' });
+    } catch (error) {
+        return res.status(500).json({ message: 'Server could not delete post because database connection' });
     }
 });
 
