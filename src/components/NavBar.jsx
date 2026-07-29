@@ -5,7 +5,10 @@ export default function NavBar() {
   return (
     <nav className="border-b border-slate-200 bg-background">
       <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-5 sm:px-8">
-        <a href="/" className="text-2xl font-extrabold tracking-tight text-slate-950">
+        <a
+          href="/"
+          className="text-2xl font-extrabold tracking-tight text-slate-950"
+        >
           hh.
         </a>
 

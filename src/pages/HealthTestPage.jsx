@@ -7,8 +7,7 @@ const HealthTestPage = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
-  const apiBaseUrl =
-    import.meta.env.VITE_API_BASE_URL || "";
+  const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || "";
 
   const handleHealthCheck = async () => {
     setLoading(true);

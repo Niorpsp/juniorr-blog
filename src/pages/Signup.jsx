@@ -13,7 +13,11 @@ export default function SignupPage() {
     event.preventDefault();
     setMessage("");
     try {
-      const response = await axios.post("/api/signup", { name, email, password });
+      const response = await axios.post("/api/signup", {
+        name,
+        email,
+        password,
+      });
       setMessage(`Signed up as ${response.data.data.name}`);
       setTimeout(() => {
         navigate("/login");
