@@ -5,6 +5,7 @@ import HeroSection from "./components/HeroSection";
 import ArticlesSection from "./components/ArticlesSection";
 import ViewPost from "./components/ViewPost";
 import Footer from "./components/Footer";
+import HealthTestPage from "./pages/HealthTestPage";
 
 function App() {
   return (
@@ -23,6 +24,7 @@ function App() {
               }
             />
             <Route path="/post/:postId" element={<ViewPost />} />
+            <Route path="/test-health" element={<HealthTestPage />} />
           </Routes>
         </div>
         <Footer />

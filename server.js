@@ -3,13 +3,17 @@ import cors from 'cors';
 import connectionPool from './utils/db.mjs';
 
 const app = express();
-const port = process.env.PORT || 4001;
+const port = process.env.PORT || 4000;
 
 app.use(cors());
 app.use(express.json());
 
 const posts = [];
 let nextPostId = 1;
+
+app.get('/health', (req, res) => {
+    return res.status(200).json({ message: 'OK' });
+});
 
 app.get('/profiles', (req, res) => {
     return res.json({
