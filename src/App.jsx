@@ -6,6 +6,8 @@ import ArticlesSection from "./components/ArticlesSection";
 import ViewPost from "./components/ViewPost";
 import Footer from "./components/Footer";
 import HealthTestPage from "./pages/HealthTestPage";
+import LoginPage from "./pages/Login";
+import SignupPage from "./pages/Signup";
 
 function App() {
   return (
@@ -25,6 +27,8 @@ function App() {
             />
             <Route path="/post/:postId" element={<ViewPost />} />
             <Route path="/test-health" element={<HealthTestPage />} />
+            <Route path="/login" element={<LoginPage />} />
+            <Route path="/signup" element={<SignupPage />} />
           </Routes>
         </div>
         <Footer />

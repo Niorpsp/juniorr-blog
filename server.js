@@ -11,6 +11,53 @@ app.use(express.json());
 const posts = [];
 let nextPostId = 1;
 
+const users = [
+    {
+        id: 1,
+        name: 'Test User',
+        email: 'test@example.com',
+        password: 'password',
+    },
+];
+let nextUserId = 2;
+
+app.post('/api/signup', async (req, res) => {
+    const { name, email, password } = req.body || {};
+    if (!name || !email || !password) {
+        return res.status(400).json({ message: 'Name, email, and password are required.' });
+    }
+
+    const normalizedEmail = email.toLowerCase();
+    const existingUser = users.find((user) => user.email === normalizedEmail);
+    if (existingUser) {
+        return res.status(400).json({ message: 'Email is already registered.' });
+    }
+
+    const newUser = {
+        id: nextUserId++,
+        name,
+        email: normalizedEmail,
+        password,
+    };
+    users.push(newUser);
+    return res.status(201).json({ data: { id: newUser.id, name: newUser.name, email: newUser.email } });
+});
+
+app.post('/api/login', async (req, res) => {
+    const { email, password } = req.body || {};
+    if (!email || !password) {
+        return res.status(400).json({ message: 'Email and password are required.' });
+    }
+
+    const normalizedEmail = email.toLowerCase();
+    const user = users.find((item) => item.email === normalizedEmail && item.password === password);
+    if (!user) {
+        return res.status(401).json({ message: 'Invalid email or password.' });
+    }
+
+    return res.status(200).json({ data: { id: user.id, name: user.name, email: user.email } });
+});
+
 app.get('/api/health', (req, res) => {
     return res.status(200).json({ message: 'OK' });
 });
