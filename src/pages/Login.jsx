@@ -28,11 +28,12 @@ export default function LoginPage() {
         <h1 className="text-2xl font-semibold text-slate-900">Log in</h1>
         <form onSubmit={handleSubmit} className="mt-6 space-y-4">
           <label className="block text-sm text-slate-700">
-            Email
+            Username or email
             <input
-              type="email"
+              type="text"
               value={email}
               onChange={(event) => setEmail(event.target.value)}
+              placeholder="admin"
               className="mt-2 w-full rounded-lg border border-slate-200 px-4 py-3 focus:border-slate-900 focus:outline-none"
               required
             />
